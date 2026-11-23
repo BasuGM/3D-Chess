@@ -1,13 +1,20 @@
 import { create } from "zustand";
+import type { Color } from "@/lib/chess/engine";
+import type { Level } from "@/lib/chess/search";
 import type { Quality } from "@/lib/theme/graphics";
 
 const KEY = "grandmaster-ui";
+
+export type Opponent = "person" | "computer";
 
 type Preferences = {
   quality: Quality;
   coordinates: boolean;
   hints: boolean;
   reducedMotion: boolean;
+  opponent: Opponent;
+  playerColor: Color;
+  level: Level;
 };
 
 type UiState = Preferences & {
@@ -15,6 +22,9 @@ type UiState = Preferences & {
   setCoordinates: (coordinates: boolean) => void;
   setHints: (hints: boolean) => void;
   setReducedMotion: (reducedMotion: boolean) => void;
+  setOpponent: (opponent: Opponent) => void;
+  setPlayerColor: (playerColor: Color) => void;
+  setLevel: (level: Level) => void;
 };
 
 const defaults: Preferences = {
@@ -22,6 +32,9 @@ const defaults: Preferences = {
   coordinates: true,
   hints: true,
   reducedMotion: false,
+  opponent: "person",
+  playerColor: "w",
+  level: "medium",
 };
 
 function persist(state: Preferences) {
@@ -35,6 +48,9 @@ function snapshot(state: UiState): Preferences {
     coordinates: state.coordinates,
     hints: state.hints,
     reducedMotion: state.reducedMotion,
+    opponent: state.opponent,
+    playerColor: state.playerColor,
+    level: state.level,
   };
 }
 
@@ -56,6 +72,18 @@ export const useUiStore = create<UiState>((set, get) => ({
     set({ reducedMotion });
     persist(snapshot(get()));
   },
+  setOpponent: (opponent) => {
+    set({ opponent });
+    persist(snapshot(get()));
+  },
+  setPlayerColor: (playerColor) => {
+    set({ playerColor });
+    persist(snapshot(get()));
+  },
+  setLevel: (level) => {
+    set({ level });
+    persist(snapshot(get()));
+  },
 }));
 
 export function hydrateUi() {
@@ -73,6 +101,9 @@ export function hydrateUi() {
       coordinates: stored.coordinates ?? defaults.coordinates,
       hints: stored.hints ?? defaults.hints,
       reducedMotion: stored.reducedMotion ?? defaults.reducedMotion,
+      opponent: stored.opponent ?? defaults.opponent,
+      playerColor: stored.playerColor ?? defaults.playerColor,
+      level: stored.level ?? defaults.level,
     });
   } catch {
     window.localStorage.removeItem(KEY);

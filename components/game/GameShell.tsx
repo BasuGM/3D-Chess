@@ -3,7 +3,10 @@
 import { useEffect, useState, type ReactNode } from "react";
 import type { PieceSymbol } from "chess.js";
 import { useGameStore, useGameView } from "@/lib/store/gameStore";
-import { hydrateUi, useUiStore } from "@/lib/store/uiStore";
+import { hydrateUi, useUiStore, type Opponent } from "@/lib/store/uiStore";
+import type { Color } from "@/lib/chess/engine";
+import type { Level } from "@/lib/chess/search";
+import { useComputer } from "@/components/game/useComputer";
 import type { Quality } from "@/lib/theme/graphics";
 import { ChessStage } from "@/components/scene/ChessStage";
 import { PlayerStack } from "@/components/game/PlayerCard";
@@ -26,6 +29,22 @@ const QUALITIES: Array<{ value: Quality; label: string }> = [
   { value: "high", label: "High" },
   { value: "balanced", label: "Balanced" },
   { value: "low", label: "Low" },
+];
+
+const OPPONENTS: Array<{ value: Opponent; label: string }> = [
+  { value: "person", label: "Person" },
+  { value: "computer", label: "Computer" },
+];
+
+const COLORS: Array<{ value: Color; label: string }> = [
+  { value: "w", label: "White" },
+  { value: "b", label: "Black" },
+];
+
+const LEVELS: Array<{ value: Level; label: string }> = [
+  { value: "easy", label: "Easy" },
+  { value: "medium", label: "Medium" },
+  { value: "hard", label: "Hard" },
 ];
 
 const PROMOTIONS: Array<{ key: string; piece: PieceSymbol; label: string }> = [
@@ -121,6 +140,15 @@ export function GameShell() {
   const setHints = useUiStore((state) => state.setHints);
   const reducedMotion = useUiStore((state) => state.reducedMotion);
   const setReducedMotion = useUiStore((state) => state.setReducedMotion);
+  const opponent = useUiStore((state) => state.opponent);
+  const setOpponent = useUiStore((state) => state.setOpponent);
+  const playerColor = useUiStore((state) => state.playerColor);
+  const setPlayerColor = useUiStore((state) => state.setPlayerColor);
+  const level = useUiStore((state) => state.level);
+  const setLevel = useUiStore((state) => state.setLevel);
+  const thinking = useGameStore((state) => state.thinking);
+
+  useComputer();
 
   const [restartOpen, setRestartOpen] = useState(false);
   const [settingsOpen, setSettingsOpen] = useState(false);
@@ -200,6 +228,17 @@ export function GameShell() {
     view.claim,
   ]);
 
+  function beginMatch(nextOpponent: Opponent, color: Color) {
+    if (nextOpponent === opponent && color === playerColor) return;
+    setOpponent(nextOpponent);
+    setPlayerColor(color);
+    const store = useGameStore.getState();
+    store.restart();
+    if (nextOpponent === "computer") {
+      store.setOrientation(color === "w" ? "white" : "black");
+    }
+  }
+
   function openFen() {
     setFenDraft(exportFen());
     setFenError(null);
@@ -250,7 +289,7 @@ export function GameShell() {
           <p className="font-display text-[1.7rem] leading-none tracking-tight">Grandmaster</p>
           <div className="mt-2 h-px w-10 bg-gold" />
           <p className="mt-2 text-sm text-ivory/85" data-testid="status">
-            {view.label}
+            {thinking ? "Computer is thinking" : view.label}
           </p>
         </div>
         <div className="pointer-events-auto flex items-center gap-2">
@@ -375,6 +414,30 @@ export function GameShell() {
           <ToggleRow label="Board coordinates" checked={coordinates} onChange={setCoordinates} />
           <ToggleRow label="Legal move hints" checked={hints} onChange={setHints} />
           <ToggleRow label="Reduced motion" checked={reducedMotion} onChange={setReducedMotion} />
+          <div>
+            <p className="mb-2 text-sm text-ivory/70">Opponent</p>
+            <SegmentedControl
+              label="Opponent"
+              value={opponent}
+              options={OPPONENTS}
+              onChange={(next) => beginMatch(next, playerColor)}
+            />
+          </div>
+          <div>
+            <p className="mb-2 text-sm text-ivory/70">You play</p>
+            <SegmentedControl
+              label="You play"
+              value={playerColor}
+              options={COLORS}
+              onChange={(next) => beginMatch(opponent, next)}
+            />
+          </div>
+          {opponent === "computer" && (
+            <div>
+              <p className="mb-2 text-sm text-ivory/70">Level</p>
+              <SegmentedControl label="Level" value={level} options={LEVELS} onChange={setLevel} />
+            </div>
+          )}
         </div>
       </Dialog>
 
@@ -463,7 +526,7 @@ export function GameShell() {
       </Dialog>
 
       <div className="sr-only" aria-live="polite">
-        {view.label}. Cursor {focusSquare}.
+        {thinking ? "Computer is thinking" : view.label}. Cursor {focusSquare}.
       </div>
     </main>
   );

@@ -2,11 +2,15 @@
 
 import type { Color } from "@/lib/chess/engine";
 import { useGameView } from "@/lib/store/gameStore";
+import { useUiStore } from "@/lib/store/uiStore";
+import { computerColor } from "@/components/game/useComputer";
 import { PieceIcon } from "@/components/game/PieceIcon";
 
 export function PlayerCard({ color }: { color: Color }) {
   const view = useGameView();
-  const name = color === "w" ? "White" : "Black";
+  const opponent = useUiStore((state) => state.opponent);
+  const playerColor = useUiStore((state) => state.playerColor);
+  const name = computerColor(opponent, playerColor) === color ? "Computer" : color === "w" ? "White" : "Black";
   const active = !view.outcome && view.status.turn === color;
   const advantage = color === "w" ? view.delta : -view.delta;
   const captured = color === "w" ? view.taken.w : view.taken.b;

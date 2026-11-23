@@ -1,6 +1,6 @@
 # Grandmaster 3D
 
-Local two-player chess. The board fills the window, the overlay stays out of the way, and [chess.js](https://github.com/jhlywa/chess.js) is the only rules authority.
+Local chess for two people, or against the computer. The board fills the window, the overlay stays out of the way, and [chess.js](https://github.com/jhlywa/chess.js) is the only rules authority. Settings chooses the opponent, the color you play, and Easy, Medium, or Hard.
 
 ## Scripts
 

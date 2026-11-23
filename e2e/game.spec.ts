@@ -100,6 +100,27 @@ test("uses a dock on a phone-sized screen", async ({ page }) => {
   await expect(page.getByRole("region", { name: "Scoresheet" })).toBeVisible();
 });
 
+test("the computer answers e4", async ({ page }) => {
+  await page.addInitScript(() => {
+    localStorage.setItem(
+      "grandmaster-ui",
+      JSON.stringify({
+        quality: "balanced",
+        coordinates: true,
+        hints: true,
+        reducedMotion: true,
+        opponent: "computer",
+        playerColor: "w",
+        level: "medium",
+      }),
+    );
+  });
+  await page.reload();
+  await expect(page.getByTestId("status")).toHaveText("White to move");
+  await play(page, "e2", "e4");
+  await expect(page.locator('[aria-label="Scoresheet"] button')).toHaveCount(3);
+});
+
 test("stays idle and stays under the draw-call budget", async ({ page }) => {
   await page.waitForFunction(() => (window.__GM_STATS__?.frames ?? 0) > 0);
   await page.waitForFunction(() => {

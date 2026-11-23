@@ -1,6 +1,6 @@
 import { useMemo } from "react";
 import { create } from "zustand";
-import type { PieceSymbol, Square } from "chess.js";
+import type { Color, PieceSymbol, Square } from "chess.js";
 import {
   START_FEN,
   capturedPieces,
@@ -32,12 +32,17 @@ type GameState = {
   orientation: Side;
   viewNonce: number;
   pendingPromotion: { from: Square; to: Square } | null;
+  thinking: boolean;
+  computer: Color | null;
   dismissedClaimFen: string | null;
   claimed: ClaimRecord | null;
   pieces: PieceInstance[];
   selectOrMove: (square: Square) => void;
   moveBetween: (from: Square, to: Square) => void;
   choosePromotion: (piece: PieceSymbol) => void;
+  setThinking: (thinking: boolean) => void;
+  setComputer: (computer: Color | null) => void;
+  playReply: (from: Square, to: Square, promotion?: PieceSymbol) => void;
   undo: () => void;
   redo: () => void;
   jump: (cursor: number) => void;
@@ -68,15 +73,32 @@ const initial = {
   orientation: "white" as Side,
   viewNonce: 0,
   pendingPromotion: null,
+  thinking: false,
+  computer: null,
   dismissedClaimFen: null,
   claimed: null,
   pieces: freshPieces(START_FEN),
 };
 
 function locked(state: GameState, fen: string, status: PositionStatus) {
-  if (state.pendingPromotion) return true;
+  if (state.thinking || state.pendingPromotion) return true;
   if (status.outcome) return true;
   return state.claimed?.fen === fen;
+}
+
+function plyStep(state: GameState, direction: "undo" | "redo") {
+  const computer = state.computer;
+  if (!computer) return 1;
+  if (direction === "undo") {
+    const last = state.history[state.cursor];
+    if (state.cursor === state.history.length - 1 && state.cursor >= 1 && last?.color === computer) {
+      return 2;
+    }
+    return 1;
+  }
+  const landing = state.cursor + 2;
+  if (landing === state.history.length - 1 && state.history[landing]?.color === computer) return 2;
+  return 1;
 }
 
 export const useGameStore = create<GameState>((set, get) => {
@@ -157,12 +179,19 @@ export const useGameStore = create<GameState>((set, get) => {
       if (!pending) return;
       commit(pending.from, pending.to, piece);
     },
+    setThinking: (thinking) => set({ thinking }),
+    setComputer: (computer) => set({ computer, thinking: false }),
+    playReply: (from, to, promotion) => {
+      set({ thinking: false });
+      commit(from, to, promotion);
+    },
     undo: () => {
       const state = get();
       if (state.cursor < 0) return;
-      const cursor = state.cursor - 1;
+      const cursor = state.cursor - plyStep(state, "undo");
       set({
         cursor,
+        thinking: false,
         selected: null,
         pendingPromotion: null,
         pieces: piecesAt(state.initialFen, state.history, cursor),
@@ -171,9 +200,10 @@ export const useGameStore = create<GameState>((set, get) => {
     redo: () => {
       const state = get();
       if (state.cursor >= state.history.length - 1) return;
-      const cursor = state.cursor + 1;
+      const cursor = Math.min(state.history.length - 1, state.cursor + plyStep(state, "redo"));
       set({
         cursor,
+        thinking: false,
         selected: null,
         pendingPromotion: null,
         pieces: piecesAt(state.initialFen, state.history, cursor),
@@ -184,14 +214,17 @@ export const useGameStore = create<GameState>((set, get) => {
       const next = Math.min(state.history.length - 1, Math.max(-1, cursor));
       set({
         cursor: next,
+        thinking: false,
         selected: null,
         pendingPromotion: null,
         pieces: piecesAt(state.initialFen, state.history, next),
       });
     },
     restart: () => {
+      const computer = get().computer;
       set({
         ...initial,
+        computer,
         pieces: freshPieces(START_FEN),
         viewNonce: get().viewNonce + 1,
       });
@@ -208,6 +241,7 @@ export const useGameStore = create<GameState>((set, get) => {
         selected: null,
         focusSquare: chessTurn === "w" ? "e2" : "e7",
         pendingPromotion: null,
+        thinking: false,
         dismissedClaimFen: null,
         claimed: null,
         pieces: freshPieces(trimmed),

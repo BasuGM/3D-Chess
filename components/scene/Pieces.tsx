@@ -43,7 +43,7 @@ function pieceLocked() {
   const state = useGameStore.getState();
   const fen = fenAt(state.initialFen, state.history, state.cursor);
   const status = statusFromLine(state.initialFen, state.history, state.cursor);
-  return Boolean(state.pendingPromotion || status.outcome || state.claimed?.fen === fen);
+  return Boolean(state.thinking || state.pendingPromotion || status.outcome || state.claimed?.fen === fen);
 }
 
 function writeInstances(

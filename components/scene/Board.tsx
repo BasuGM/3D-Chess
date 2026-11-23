@@ -49,10 +49,19 @@ function BoardSquares({
     const status = statusFromLine(state.initialFen, state.history, state.cursor);
     const occupant = state.pieces.find((piece) => piece.square === square);
     const ownPiece =
-      occupant && occupant.color === status.turn && !state.pendingPromotion && !status.outcome
+      occupant &&
+      occupant.color === status.turn &&
+      !state.thinking &&
+      !state.pendingPromotion &&
+      !status.outcome
         ? occupant.id
         : null;
-    if (state.pendingPromotion || status.outcome || state.claimed?.fen === fenAt(state.initialFen, state.history, state.cursor)) {
+    if (
+      state.thinking ||
+      state.pendingPromotion ||
+      status.outcome ||
+      state.claimed?.fen === fenAt(state.initialFen, state.history, state.cursor)
+    ) {
       return;
     }
     startPointerDrag(square, ownPiece);

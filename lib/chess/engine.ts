@@ -119,6 +119,34 @@ export function statusFromLine(
   return { turn, inCheck, outcome: null, claim };
 }
 
+export type ListedMove = {
+  from: Square;
+  to: Square;
+  promotion?: PieceSymbol;
+  captured?: PieceSymbol;
+  capture: boolean;
+  fen: string;
+};
+
+/** Legal moves for a search. Promotions are limited to queen and knight. */
+export function listMoves(fen: string): ListedMove[] {
+  const chess = new Chess(fen);
+  const listed: ListedMove[] = [];
+  for (const move of chess.moves({ verbose: true })) {
+    if (move.captured === "k") continue;
+    if (move.promotion && move.promotion !== "q" && move.promotion !== "n") continue;
+    listed.push({
+      from: move.from,
+      to: move.to,
+      promotion: move.promotion,
+      captured: move.captured,
+      capture: move.isCapture(),
+      fen: move.after,
+    });
+  }
+  return listed;
+}
+
 export function legalFrom(fen: string, square: Square): LegalDest[] {
   const chess = new Chess(fen);
   const moves = chess.moves({ square, verbose: true });
