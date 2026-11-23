@@ -1,36 +1,49 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Grandmaster 3D
 
-## Getting Started
+Local two-player chess. The board fills the window, the overlay stays out of the way, and [chess.js](https://github.com/jhlywa/chess.js) is the only rules authority.
 
-First, run the development server:
+## Scripts
 
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+npm run dev        # http://localhost:3000
+npm run build      # production build
+npm run start      # serve the production build
+npm run lint
+npm test           # unit and component tests
+npm run test:e2e   # Playwright, desktop Chromium
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+`test:e2e` starts the dev server on port 3000 when one is not already running.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Architecture
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+Next.js App Router, React, TypeScript, Tailwind, React Three Fiber, and Zustand.
 
-## Learn More
+- `lib/chess/engine.ts` is the only module that imports chess.js. It creates positions, lists legal moves, applies moves, and reports check, mate, stalemate, insufficient material, threefold repetition, and the fifty-move rule.
+- `lib/store/gameStore.ts` keeps serialisable game data: FEN, the move list, the scoresheet cursor, selection, and orientation. Components never hold a `Chess` instance.
+- `lib/store/uiStore.ts` keeps graphics quality, coordinates, legal-move hints, and reduced motion. Those preferences are the only `localStorage` data. The game itself is not saved.
+- `lib/chess/pieceDiff.ts` gives each piece a stable id so meshes can slide, castle, capture en passant, and promote without remounting.
+- `components/scene/ChessScene.tsx` renders on demand. The canvas is idle when nothing is animating.
+- Pieces are procedural Staunton meshes, instanced by type and color. See [docs/credits.md](docs/credits.md).
 
-To learn more about Next.js, take a look at the following resources:
+Mate, stalemate, and insufficient material end the game. Threefold repetition and the fifty-move rule open a claim. Promotion cannot be skipped.
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+## Controls
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+| Action | Pointer | Keyboard |
+| --- | --- | --- |
+| Select a piece | Click it | Arrows, then Enter |
+| Move | Click or drag onto a legal square | Enter on the destination |
+| Cancel | Click empty board | Esc |
+| Undo / redo | Dock buttons | `z` / `Shift+z` |
+| Fullscreen | Header button | `f` |
+| Camera | Drag the frame or the background. Scroll or pinch to zoom | — |
+| White / Black / reset view | Buttons at the canvas corner on tablet and desktop. Flip is in the mobile dock | — |
 
-## Deploy on Vercel
+Arrow keys follow the side you are looking from. Illegal squares are not highlighted. Check is a red rim on the king plus the status line.
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+On a phone, the dock holds undo, redo, restart, flip, and the game sheet. The sheet covers the lower part of the screen and leaves the board visible.
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+## Credits
+
+Piece geometry, chess.js, and the rest of the stack are credited in [docs/credits.md](docs/credits.md). Measured frame and draw-call numbers are in [docs/performance.md](docs/performance.md).
