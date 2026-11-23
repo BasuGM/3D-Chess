@@ -1,8 +1,40 @@
-# Grandmaster 3D
+# ♟ Grandmaster 3D
 
-Local chess for two people, or against the computer. The board fills the window, the overlay stays out of the way, and [chess.js](https://github.com/jhlywa/chess.js) is the only rules authority. Settings chooses the opponent, the color you play, and Easy, Medium, or Hard.
+Local 3D chess for two people, or against a small search opponent. The board fills the window, [chess.js](https://github.com/jhlywa/chess.js) is the rules authority, and the overlay stays out of the way.
 
-## Scripts
+[Play it](https://basugm.github.io/3D-Chess/)
+
+![A 3D chessboard after 1. e4 e5 2. Nf3 Nc6, with player cards and the scoresheet open](docs/images/board.png)
+
+## ✨ Highlights
+
+- Two people can play on one screen. The board can turn to face the side to move.
+- Easy, Medium, and Hard are a local search. You pick the color you play.
+- Move by click, drag, or the keyboard. Illegal squares stay quiet.
+- Promotion cannot be skipped. Mate, stalemate, and insufficient material end the game. Threefold repetition and the fifty-move rule open a claim.
+- Pieces are procedural Staunton meshes. The canvas draws a frame when something changes, and sits idle when the board is still.
+
+## 🧰 Stack
+
+- **Next.js and React** render the single page and the overlay.
+- **TypeScript** types the game data, the squares, and the scene.
+- **Tailwind** styles the dock, the scoresheet, and the settings.
+- **React Three Fiber and Three.js** draw the board, the lights, and the pieces.
+- **Zustand** keeps the game in one store and the settings in another.
+- **chess.js** decides what is legal.
+
+The versions and the choices left out on purpose are in [docs/stack.md](docs/stack.md).
+
+## 🏗️ How it is built
+
+- [`lib/chess/engine.ts`](lib/chess/engine.ts) is the only module that applies a move. It lists legal moves and reports check, mate, stalemate, insufficient material, threefold repetition, and the fifty-move rule.
+- [`lib/chess/pieceDiff.ts`](lib/chess/pieceDiff.ts) also constructs a `Chess` instance, and only to read the board when it assigns a stable id to each piece. Meshes slide, castle, capture, and promote without remounting.
+- Settings are the only `localStorage` data. The game itself is not saved.
+- [`components/scene/ChessScene.tsx`](components/scene/ChessScene.tsx) renders on demand. When nothing is animating, the canvas is idle.
+
+The move path, the search, and the tests are in [docs/architecture.md](docs/architecture.md).
+
+## ▶️ Run locally
 
 ```bash
 npm run dev        # http://localhost:3000
@@ -15,28 +47,7 @@ npm run test:e2e   # Playwright, desktop Chromium
 
 `test:e2e` starts the dev server on port 3000 when one is not already running.
 
-## Architecture
-
-Next.js App Router, React, TypeScript, Tailwind, React Three Fiber, and Zustand.
-
-- `lib/chess/engine.ts` is the only module that applies moves. It creates positions, lists legal moves, and reports check, mate, stalemate, insufficient material, threefold repetition, and the fifty-move rule. `lib/chess/pieceDiff.ts` also constructs a `Chess` instance, and only to read the board when assigning piece ids. Other chess.js imports are types.
-- `lib/store/gameStore.ts` keeps serialisable game data: FEN, the move list, the scoresheet cursor, selection, and orientation. Components never hold a `Chess` instance.
-- `lib/store/uiStore.ts` keeps graphics quality, coordinates, legal-move hints, and reduced motion. Those preferences are the only `localStorage` data. The game itself is not saved.
-- `lib/chess/pieceDiff.ts` gives each piece a stable id so meshes can slide, castle, capture en passant, and promote without remounting.
-- `components/scene/ChessScene.tsx` renders on demand. The canvas is idle when nothing is animating.
-- Pieces are procedural Staunton meshes, instanced by type and color. See [docs/credits.md](docs/credits.md).
-
-Mate, stalemate, and insufficient material end the game. Threefold repetition and the fifty-move rule open a claim. Promotion cannot be skipped.
-
-## Docs
-
-- [Stack](docs/stack.md)
-- [Architecture](docs/architecture.md)
-- [Interview notes](docs/interview.md)
-- [Performance](docs/performance.md)
-- [Credits](docs/credits.md)
-
-## Controls
+## ⌨️ Controls
 
 | Action | Pointer | Keyboard |
 | --- | --- | --- |
@@ -48,10 +59,18 @@ Mate, stalemate, and insufficient material end the game. Threefold repetition an
 | Camera | Drag the frame or the background. Scroll or pinch to zoom | — |
 | White / Black / reset view | Buttons at the canvas corner on tablet and desktop. Flip is in the mobile dock | — |
 
-Arrow keys follow the side you are looking from. Illegal squares are not highlighted. Check is a red rim on the king plus the status line.
+Arrow keys follow the side you are looking from. Check is a red rim on the king plus the status line.
 
 On a phone, the dock holds undo, redo, restart, flip, and the game sheet. The sheet covers the lower part of the screen and leaves the board visible.
 
-## Credits
+## 📚 Docs
+
+- [Stack](docs/stack.md)
+- [Architecture](docs/architecture.md)
+- [Interview notes](docs/interview.md)
+- [Performance](docs/performance.md)
+- [Credits](docs/credits.md)
+
+## 🙏 Credits
 
 Piece geometry, chess.js, and the rest of the stack are credited in [docs/credits.md](docs/credits.md). Measured frame and draw-call numbers are in [docs/performance.md](docs/performance.md).
