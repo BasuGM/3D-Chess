@@ -19,7 +19,7 @@ npm run test:e2e   # Playwright, desktop Chromium
 
 Next.js App Router, React, TypeScript, Tailwind, React Three Fiber, and Zustand.
 
-- `lib/chess/engine.ts` is the only module that imports chess.js. It creates positions, lists legal moves, applies moves, and reports check, mate, stalemate, insufficient material, threefold repetition, and the fifty-move rule.
+- `lib/chess/engine.ts` is the only module that applies moves. It creates positions, lists legal moves, and reports check, mate, stalemate, insufficient material, threefold repetition, and the fifty-move rule. `lib/chess/pieceDiff.ts` also constructs a `Chess` instance, and only to read the board when assigning piece ids. Other chess.js imports are types.
 - `lib/store/gameStore.ts` keeps serialisable game data: FEN, the move list, the scoresheet cursor, selection, and orientation. Components never hold a `Chess` instance.
 - `lib/store/uiStore.ts` keeps graphics quality, coordinates, legal-move hints, and reduced motion. Those preferences are the only `localStorage` data. The game itself is not saved.
 - `lib/chess/pieceDiff.ts` gives each piece a stable id so meshes can slide, castle, capture en passant, and promote without remounting.
@@ -27,6 +27,14 @@ Next.js App Router, React, TypeScript, Tailwind, React Three Fiber, and Zustand.
 - Pieces are procedural Staunton meshes, instanced by type and color. See [docs/credits.md](docs/credits.md).
 
 Mate, stalemate, and insufficient material end the game. Threefold repetition and the fifty-move rule open a claim. Promotion cannot be skipped.
+
+## Docs
+
+- [Stack](docs/stack.md)
+- [Architecture](docs/architecture.md)
+- [Interview notes](docs/interview.md)
+- [Performance](docs/performance.md)
+- [Credits](docs/credits.md)
 
 ## Controls
 
