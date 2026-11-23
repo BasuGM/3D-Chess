@@ -15,6 +15,9 @@ type Preferences = {
   opponent: Opponent;
   playerColor: Color;
   level: Level;
+  turnBoard: boolean;
+  scoresheet: boolean;
+  fenPgn: boolean;
 };
 
 type UiState = Preferences & {
@@ -25,6 +28,9 @@ type UiState = Preferences & {
   setOpponent: (opponent: Opponent) => void;
   setPlayerColor: (playerColor: Color) => void;
   setLevel: (level: Level) => void;
+  setTurnBoard: (turnBoard: boolean) => void;
+  setScoresheet: (scoresheet: boolean) => void;
+  setFenPgn: (fenPgn: boolean) => void;
 };
 
 const defaults: Preferences = {
@@ -35,6 +41,9 @@ const defaults: Preferences = {
   opponent: "person",
   playerColor: "w",
   level: "medium",
+  turnBoard: true,
+  scoresheet: true,
+  fenPgn: true,
 };
 
 function persist(state: Preferences) {
@@ -51,6 +60,9 @@ function snapshot(state: UiState): Preferences {
     opponent: state.opponent,
     playerColor: state.playerColor,
     level: state.level,
+    turnBoard: state.turnBoard,
+    scoresheet: state.scoresheet,
+    fenPgn: state.fenPgn,
   };
 }
 
@@ -84,6 +96,18 @@ export const useUiStore = create<UiState>((set, get) => ({
     set({ level });
     persist(snapshot(get()));
   },
+  setTurnBoard: (turnBoard) => {
+    set({ turnBoard });
+    persist(snapshot(get()));
+  },
+  setScoresheet: (scoresheet) => {
+    set({ scoresheet });
+    persist(snapshot(get()));
+  },
+  setFenPgn: (fenPgn) => {
+    set({ fenPgn });
+    persist(snapshot(get()));
+  },
 }));
 
 export function hydrateUi() {
@@ -104,6 +128,9 @@ export function hydrateUi() {
       opponent: stored.opponent ?? defaults.opponent,
       playerColor: stored.playerColor ?? defaults.playerColor,
       level: stored.level ?? defaults.level,
+      turnBoard: stored.turnBoard ?? defaults.turnBoard,
+      scoresheet: stored.scoresheet ?? defaults.scoresheet,
+      fenPgn: stored.fenPgn ?? defaults.fenPgn,
     });
   } catch {
     window.localStorage.removeItem(KEY);

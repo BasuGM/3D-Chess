@@ -87,6 +87,24 @@ function TextButton({
   );
 }
 
+function SettingsSection({ title, children }: { title: string; children: ReactNode }) {
+  return (
+    <section className="border-t border-white/10 pt-2 first:border-t-0 first:pt-0">
+      <h3 className="mb-1.5 text-[0.68rem] tracking-[0.16em] text-gold uppercase">{title}</h3>
+      <div className="flex flex-col gap-2">{children}</div>
+    </section>
+  );
+}
+
+function ChoiceRow({ label, children }: { label: string; children: ReactNode }) {
+  return (
+    <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-2">
+      <p className="text-sm">{label}</p>
+      {children}
+    </div>
+  );
+}
+
 function ToggleRow({
   label,
   checked,
@@ -97,7 +115,7 @@ function ToggleRow({
   onChange: (checked: boolean) => void;
 }) {
   return (
-    <label className="flex items-center justify-between gap-4 py-2 text-sm">
+    <label className="flex items-center justify-between gap-4 py-1 text-sm">
       <span>{label}</span>
       <input
         type="checkbox"
@@ -138,6 +156,10 @@ export function GameShell() {
   const setCoordinates = useUiStore((state) => state.setCoordinates);
   const hints = useUiStore((state) => state.hints);
   const setHints = useUiStore((state) => state.setHints);
+  const scoresheet = useUiStore((state) => state.scoresheet);
+  const setScoresheet = useUiStore((state) => state.setScoresheet);
+  const fenPgn = useUiStore((state) => state.fenPgn);
+  const setFenPgn = useUiStore((state) => state.setFenPgn);
   const reducedMotion = useUiStore((state) => state.reducedMotion);
   const setReducedMotion = useUiStore((state) => state.setReducedMotion);
   const opponent = useUiStore((state) => state.opponent);
@@ -146,6 +168,8 @@ export function GameShell() {
   const setPlayerColor = useUiStore((state) => state.setPlayerColor);
   const level = useUiStore((state) => state.level);
   const setLevel = useUiStore((state) => state.setLevel);
+  const turnBoard = useUiStore((state) => state.turnBoard);
+  const setTurnBoard = useUiStore((state) => state.setTurnBoard);
   const thinking = useGameStore((state) => state.thinking);
 
   useComputer();
@@ -261,11 +285,13 @@ export function GameShell() {
   const record = (
     <div className="flex flex-col gap-4">
       <PlayerStack />
-      <ScoreSheet />
-      <div className="flex gap-2">
-        <TextButton onClick={openFen}>FEN</TextButton>
-        <TextButton onClick={openPgn}>PGN</TextButton>
-      </div>
+      {scoresheet && <ScoreSheet />}
+      {fenPgn && (
+        <div className="flex gap-2">
+          <TextButton onClick={openFen}>FEN</TextButton>
+          <TextButton onClick={openPgn}>PGN</TextButton>
+        </div>
+      )}
     </div>
   );
 
@@ -277,6 +303,7 @@ export function GameShell() {
           id="board-keys"
           data-testid="board-keys"
           data-square={focusSquare}
+          data-orientation={orientation}
           tabIndex={0}
           aria-label="Chessboard. Arrow keys move the cursor. Enter selects or moves."
           className="pointer-events-none absolute inset-0 outline-none"
@@ -322,11 +349,13 @@ export function GameShell() {
       </aside>
       <aside className="pointer-events-none absolute top-32 right-6 z-20 hidden w-[320px] min-[1280px]:block">
         <div className="pointer-events-auto flex flex-col gap-3">
-          <ScoreSheet />
-          <div className="flex gap-2">
-            <TextButton onClick={openFen}>FEN</TextButton>
-            <TextButton onClick={openPgn}>PGN</TextButton>
-          </div>
+          {scoresheet && <ScoreSheet />}
+          {fenPgn && (
+            <div className="flex gap-2">
+              <TextButton onClick={openFen}>FEN</TextButton>
+              <TextButton onClick={openPgn}>PGN</TextButton>
+            </div>
+          )}
         </div>
       </aside>
 
@@ -405,39 +434,54 @@ export function GameShell() {
         </div>
       </Dialog>
 
-      <Dialog open={settingsOpen} title="Settings" onClose={() => setSettingsOpen(false)}>
-        <div className="flex flex-col gap-4">
-          <div>
-            <p className="mb-2 text-sm text-ivory/70">Graphics</p>
-            <SegmentedControl label="Graphics quality" value={quality} options={QUALITIES} onChange={setQuality} />
-          </div>
-          <ToggleRow label="Board coordinates" checked={coordinates} onChange={setCoordinates} />
-          <ToggleRow label="Legal move hints" checked={hints} onChange={setHints} />
-          <ToggleRow label="Reduced motion" checked={reducedMotion} onChange={setReducedMotion} />
-          <div>
-            <p className="mb-2 text-sm text-ivory/70">Opponent</p>
-            <SegmentedControl
-              label="Opponent"
-              value={opponent}
-              options={OPPONENTS}
-              onChange={(next) => beginMatch(next, playerColor)}
-            />
-          </div>
-          <div>
-            <p className="mb-2 text-sm text-ivory/70">You play</p>
-            <SegmentedControl
-              label="You play"
-              value={playerColor}
-              options={COLORS}
-              onChange={(next) => beginMatch(opponent, next)}
-            />
-          </div>
-          {opponent === "computer" && (
-            <div>
-              <p className="mb-2 text-sm text-ivory/70">Level</p>
-              <SegmentedControl label="Level" value={level} options={LEVELS} onChange={setLevel} />
-            </div>
-          )}
+      <Dialog open={settingsOpen} title="Settings" onClose={() => setSettingsOpen(false)} scroll>
+        <div className="flex flex-col gap-3">
+          <SettingsSection title="Play">
+            <ChoiceRow label="Opponent">
+              <SegmentedControl
+                label="Opponent"
+                value={opponent}
+                options={OPPONENTS}
+                onChange={(next) => beginMatch(next, playerColor)}
+              />
+            </ChoiceRow>
+            <ChoiceRow label="You play">
+              <SegmentedControl
+                label="You play"
+                value={playerColor}
+                options={COLORS}
+                onChange={(next) => beginMatch(opponent, next)}
+              />
+            </ChoiceRow>
+            {opponent === "person" ? (
+              <ToggleRow
+                label="Turn after each move"
+                checked={turnBoard}
+                onChange={(next) => {
+                  setTurnBoard(next);
+                  if (next) setOrientation(view.status.turn === "w" ? "white" : "black");
+                }}
+              />
+            ) : (
+              <ChoiceRow label="Level">
+                <SegmentedControl label="Level" value={level} options={LEVELS} onChange={setLevel} />
+              </ChoiceRow>
+            )}
+          </SettingsSection>
+          <SettingsSection title="Board">
+            <ToggleRow label="Coordinates" checked={coordinates} onChange={setCoordinates} />
+            <ToggleRow label="Legal move hints" checked={hints} onChange={setHints} />
+          </SettingsSection>
+          <SettingsSection title="Record">
+            <ToggleRow label="Scoresheet" checked={scoresheet} onChange={setScoresheet} />
+            <ToggleRow label="FEN and PGN" checked={fenPgn} onChange={setFenPgn} />
+          </SettingsSection>
+          <SettingsSection title="Graphics">
+            <ChoiceRow label="Quality">
+              <SegmentedControl label="Graphics quality" value={quality} options={QUALITIES} onChange={setQuality} />
+            </ChoiceRow>
+            <ToggleRow label="Reduced motion" checked={reducedMotion} onChange={setReducedMotion} />
+          </SettingsSection>
         </div>
       </Dialog>
 

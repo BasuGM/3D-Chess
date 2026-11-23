@@ -9,6 +9,7 @@ type DialogProps = {
   children: ReactNode;
   dismissable?: boolean;
   wide?: boolean;
+  scroll?: boolean;
 };
 
 export function Dialog({
@@ -18,6 +19,7 @@ export function Dialog({
   children,
   dismissable = true,
   wide = false,
+  scroll = false,
 }: DialogProps) {
   const titleId = useId();
   const panel = useRef<HTMLDivElement>(null);
@@ -70,12 +72,14 @@ export function Dialog({
         role="dialog"
         aria-modal="true"
         aria-labelledby={titleId}
-        className={`relative z-10 w-full rounded-xl border border-white/10 bg-elevated p-5 ${wide ? "max-w-lg" : "max-w-md"}`}
+        className={`relative z-10 flex w-full flex-col rounded-xl border border-white/10 bg-elevated ${
+          scroll ? "max-h-[calc(100dvh-2rem)] p-4" : "p-5"
+        } ${wide ? "max-w-lg" : "max-w-md"}`}
       >
-        <h2 id={titleId} className="font-display text-2xl text-ivory">
+        <h2 id={titleId} className="shrink-0 font-display text-2xl text-ivory">
           {title}
         </h2>
-        <div className="mt-4">{children}</div>
+        <div className={scroll ? "mt-4 min-h-0 flex-1 overflow-y-auto pr-1" : "mt-4"}>{children}</div>
       </div>
     </div>
   );

@@ -9,10 +9,13 @@ async function moveTo(page: Page, square: string) {
     if (!current) throw new Error("Missing board cursor");
     const fileDelta = square.charCodeAt(0) - current.charCodeAt(0);
     const rankDelta = Number(square[1]) - Number(current[1]);
+    const black = (await board.getAttribute("data-orientation")) === "black";
     if (fileDelta !== 0) {
-      await page.keyboard.press(fileDelta > 0 ? "ArrowRight" : "ArrowLeft");
+      const towardHigherFile = fileDelta > 0 ? !black : black;
+      await page.keyboard.press(towardHigherFile ? "ArrowRight" : "ArrowLeft");
     } else {
-      await page.keyboard.press(rankDelta > 0 ? "ArrowUp" : "ArrowDown");
+      const towardHigherRank = rankDelta > 0 ? !black : black;
+      await page.keyboard.press(towardHigherRank ? "ArrowUp" : "ArrowDown");
     }
   }
   throw new Error(`Could not reach ${square}`);

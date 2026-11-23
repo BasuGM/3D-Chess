@@ -19,6 +19,8 @@ describe("GameShell", () => {
       coordinates: true,
       hints: true,
       reducedMotion: false,
+      scoresheet: true,
+      fenPgn: true,
     });
   });
 
@@ -36,6 +38,36 @@ describe("GameShell", () => {
     expect(screen.getByRole("button", { name: "e4" })).toBeInTheDocument();
     expect(screen.getByTestId("status")).toHaveTextContent("Black to move");
     expect(screen.getByTestId("undo")).toBeEnabled();
+  });
+
+  it("hides the scoresheet when the setting is off", () => {
+    useUiStore.setState({ scoresheet: false });
+    render(<GameShell />);
+    expect(screen.queryByRole("region", { name: "Scoresheet" })).not.toBeInTheDocument();
+    expect(screen.queryByText("No moves yet")).not.toBeInTheDocument();
+    expect(screen.getByTestId("player-w")).toBeInTheDocument();
+  });
+
+  it("hides FEN and PGN when the setting is off", () => {
+    useUiStore.setState({ fenPgn: false });
+    render(<GameShell />);
+    expect(screen.queryByRole("button", { name: "FEN" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "PGN" })).not.toBeInTheDocument();
+    expect(screen.getByRole("region", { name: "Scoresheet" })).toBeInTheDocument();
+  });
+
+  it("groups settings by play, board, record, and graphics", async () => {
+    const user = userEvent.setup();
+    render(<GameShell />);
+    await user.click(screen.getByRole("button", { name: "Settings" }));
+    expect(screen.getByRole("heading", { name: "Play" })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "Board" })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "Record" })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "Graphics" })).toBeInTheDocument();
+    expect(screen.getByRole("checkbox", { name: "Turn after each move" })).toBeInTheDocument();
+    await user.click(screen.getByRole("radio", { name: "Computer" }));
+    expect(screen.getByRole("radio", { name: "Medium" })).toBeChecked();
+    expect(screen.queryByRole("checkbox", { name: "Turn after each move" })).not.toBeInTheDocument();
   });
 
   it("confirms a restart and clears the scoresheet", async () => {

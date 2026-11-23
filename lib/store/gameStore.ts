@@ -20,6 +20,7 @@ import {
 } from "@/lib/chess/engine";
 import { piecesAt, type PieceInstance } from "@/lib/chess/pieceDiff";
 import { shiftSquare, type Side } from "@/lib/chess/squares";
+import { useUiStore } from "@/lib/store/uiStore";
 
 type ClaimRecord = { fen: string; reason: Claim["reason"] };
 
@@ -86,6 +87,11 @@ function locked(state: GameState, fen: string, status: PositionStatus) {
   return state.claimed?.fen === fen;
 }
 
+function facingSide(state: GameState, initialFen: string, history: HistoryMove[], cursor: number) {
+  if (state.computer || !useUiStore.getState().turnBoard) return undefined;
+  return statusFromLine(initialFen, history, cursor).turn === "w" ? "white" : "black";
+}
+
 function plyStep(state: GameState, direction: "undo" | "redo") {
   const computer = state.computer;
   if (!computer) return 1;
@@ -126,6 +132,7 @@ export const useGameStore = create<GameState>((set, get) => {
     const history = state.history.slice(0, state.cursor + 1);
     history.push(result.move);
     const cursor = history.length - 1;
+    const orientation = facingSide(state, state.initialFen, history, cursor);
     set({
       history,
       cursor,
@@ -135,6 +142,7 @@ export const useGameStore = create<GameState>((set, get) => {
       dismissedClaimFen: null,
       claimed: null,
       pieces: piecesAt(state.initialFen, history, cursor),
+      ...(orientation ? { orientation } : {}),
     });
   }
 
@@ -189,63 +197,77 @@ export const useGameStore = create<GameState>((set, get) => {
       const state = get();
       if (state.cursor < 0) return;
       const cursor = state.cursor - plyStep(state, "undo");
+      const orientation = facingSide(state, state.initialFen, state.history, cursor);
       set({
         cursor,
         thinking: false,
         selected: null,
         pendingPromotion: null,
         pieces: piecesAt(state.initialFen, state.history, cursor),
+        ...(orientation ? { orientation } : {}),
       });
     },
     redo: () => {
       const state = get();
       if (state.cursor >= state.history.length - 1) return;
       const cursor = Math.min(state.history.length - 1, state.cursor + plyStep(state, "redo"));
+      const orientation = facingSide(state, state.initialFen, state.history, cursor);
       set({
         cursor,
         thinking: false,
         selected: null,
         pendingPromotion: null,
         pieces: piecesAt(state.initialFen, state.history, cursor),
+        ...(orientation ? { orientation } : {}),
       });
     },
     jump: (cursor) => {
       const state = get();
       const next = Math.min(state.history.length - 1, Math.max(-1, cursor));
+      const orientation = facingSide(state, state.initialFen, state.history, next);
       set({
         cursor: next,
         thinking: false,
         selected: null,
         pendingPromotion: null,
         pieces: piecesAt(state.initialFen, state.history, next),
+        ...(orientation ? { orientation } : {}),
       });
     },
     restart: () => {
-      const computer = get().computer;
+      const state = get();
       set({
         ...initial,
-        computer,
+        computer: state.computer,
+        orientation: state.computer ? state.orientation : initial.orientation,
         pieces: freshPieces(START_FEN),
-        viewNonce: get().viewNonce + 1,
+        viewNonce: state.viewNonce + 1,
       });
     },
     importFen: (fen) => {
       const inspected = inspectFen(fen);
       if (!inspected.ok) return inspected.error;
       const trimmed = fen.trim();
+      const state = get();
       const chessTurn = statusFromLine(trimmed, [], -1).turn;
+      const orientation = state.computer
+        ? state.orientation
+        : chessTurn === "w"
+          ? "white"
+          : "black";
       set({
         initialFen: trimmed,
         history: [],
         cursor: -1,
         selected: null,
         focusSquare: chessTurn === "w" ? "e2" : "e7",
+        orientation,
         pendingPromotion: null,
         thinking: false,
         dismissedClaimFen: null,
         claimed: null,
         pieces: freshPieces(trimmed),
-        viewNonce: get().viewNonce + 1,
+        viewNonce: state.viewNonce + 1,
       });
       return null;
     },
